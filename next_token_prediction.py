@@ -164,7 +164,8 @@ if __name__ == "__main__":
   tokenizer_path = "codellama7b_tokenizer.model"
   device = "cpu"
 
-  do_inference: bool = True 
+  # Toggle for pre-training or inference
+  do_inference: bool = False
   do_training: bool = not do_inference
 
   if do_training:
