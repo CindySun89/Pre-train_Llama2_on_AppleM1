@@ -1,5 +1,7 @@
 # Pre-train_Llama2_on_AppleM1
 
+This repo requires a MacBook Pro equipped with powerful Apple M-series processor.
+
 A. To set up the environment:
 
 1. Clone the repo:
