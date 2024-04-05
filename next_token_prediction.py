@@ -270,8 +270,9 @@ def do_inference(
 
 # Set up the model
 parser = argparse.ArgumentParser(description='Tiny Llama2 Pre-training or Inferencing.')
-parser.add_argument('doinference', type = bool,const=None, default=None,\
-                    help = 'Toggle indicating doing inference (True) or pre-training (False)')  # do_inference (True) or do_training (False) flag
+# parser.add_argument('doinference', type = bool,const=None, default=None,\
+#                     help = 'Toggle indicating doing inference (True) or pre-training (False)')  # do_inference (True) or do_training (False) flag
+parser.add_argument('--inference-only', action='store_true')
 parser.add_argument('-param_dir', default = 'llama2-tiny', help = 'path to model configuration jason file')           
 parser.add_argument('-tokenizer_path', default = 'codellama7b_tokenizer.model')
 parser.add_argument('-device', default = 'cpu')           
@@ -280,7 +281,7 @@ parser.add_argument('-prompt_text', default = "How to assess fairness assessment
 parser.add_argument('-traindata', default = "sr1107a1.txt") 
 args = parser.parse_args()
 #print(args.inference, args.param_dir, args.tokenizer_path, args.device, args.ckpt_path, args.prompt_text, args.traindata)
-print(args.doinference)
+print(args.inference_only)
 if __name__ == "__main__":
   #ckpt_dir = "llama2-tiny"
   #tokenizer_path = "codellama7b_tokenizer.model"
@@ -290,7 +291,7 @@ if __name__ == "__main__":
   #do_inference: bool = False
   #do_training: bool = not do_inference
 
-  if args.doinference:
+  if args.inference_only:
     # Task: Generate code from prompt text
     #prompt_text= "from sklearn.model_selection import GridSearchCV\ndef test_gridsearch("
     #prompt_text = "with open(filepath, "
