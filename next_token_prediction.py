@@ -16,18 +16,14 @@ from llama import Llama, Dialog
 ## https://pytorch.org/xla/release/2.1/index.html#pytorch-on-xla-devices
 # import torch_xla.core.xla_model as xm
 
+# Define underline style used for inference output.
 class bcolors:
     OKCYAN = '\033[96m'
     OKGREEN = '\033[92m'
     ENDC = '\033[0m'
     UNDERLINE = '\033[4m'
 
-# Path to the Llama2 model on local machine that was checked out from Meta's GitHub
-#llama2_path = '../llama'
-#sys.path.append(llama2_path)
-
-
-# Define utility function to perform top-p sampling
+# Define utility function for top-p sampling
 def sample_top_p(probs, p):
   """
   Perform top-p (nucleus) sampling on a probability distribution.
@@ -53,7 +49,7 @@ def sample_top_p(probs, p):
   next_token = torch.gather(probs_idx, -1, next_token)
   return next_token
 
-# The main function for pre-training a Llama2 model on a text corpus
+# Define the main function for pre-training a Llama2 model
 def main(
     param_dir: str,
     tokenizer_path: str,
@@ -62,10 +58,12 @@ def main(
     max_seq_len: int = 128,
     max_gen_len: int = 64,
     max_batch_size: int = 4,
-    traindata_path: str = ""
+    n_epochs: int = 10,
+    traindata_path: str = "",
+    ckpt_path: str = "model_ckpt.pt",
 ):
     """
-    Pre-train a Llama2 model using local training data in the form of a text file.
+    Pre-train a Llama2 model using local training data.
 
     Args:
         param_dir (str): The directory containing model configuration json file.
@@ -77,7 +75,9 @@ def main(
         max_seq_len (int, optional): The maximum sequence length for input prompts. Defaults to 128.
         max_gen_len (int, optional): The maximum length of generated sequences. Defaults to 64.
         max_batch_size (int, optional): The maximum batch size for generating sequences. Defaults to 4.
+        n_epochs (int, optional): The number of epochs to train the model. Defaults to 10.
         traindata_path (str, optional): The path to the training data file. 
+        ckpt_path (str, optional): The path to save the model checkpoint. Defaults to "model_ckpt.pt".
     """
     # Use SentencePiece to encode/decode the text data
     sp_model = SentencePieceProcessor(model_file=tokenizer_path)
@@ -96,7 +96,6 @@ def main(
     all_tokens.extend(tokens)
 
     # convert to uint16 np array to save space when saving to disk
-    #import numpy as np
     all_tokens = np.array(all_tokens, dtype=np.uint16)
     with open('traindata.bin', 'wb') as f:
         f.write(all_tokens.tobytes())
@@ -112,10 +111,10 @@ def main(
     numParameters = sum(p.numel() for p in model.parameters() if p.requires_grad)
     print("numParameters = ", numParameters)
 
-    # initialize model weights
+    # Initialize model weights
     model.apply(lambda m : nn.init.xavier_uniform_(m.weight.data) if hasattr(m, 'weight') and m.weight.dim() > 1 else None)
 
-    # Load training samples
+    # Load the training samples
     BS = model_config.max_batch_size
     train_fn = "traindata.bin"
     m = np.memmap(train_fn, dtype=np.uint16, mode='r')
@@ -144,7 +143,7 @@ def main(
     lossFn = nn.CrossEntropyLoss(ignore_index=-1)
     total_loss = 0
     count = 0
-    n_epochs = 200
+    
     for epoch in range(n_epochs):
         for X, Y in train_data:
           optimizer.zero_grad()
@@ -157,23 +156,25 @@ def main(
           torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
           optimizer.step()
           total_loss += loss.item()
-          # xm.mark_step()
-          if count % 6 == 0:
-            print("data point: ", count, ", loss = ", loss.item())
-            #avg_loss = total_loss / len(train_data)
-            if count > 0:
-              avg_loss = total_loss / count
-            else:
-              avg_loss = total_loss 
+          # Print data point level results to show progress. Not needed when the code has been tested and works properly.
+          #if count % 10 == 0:
+          #  print("data point: ", count, ", loss = ", loss.item())
+          
+          if count > 0:
+            avg_loss = total_loss / count
+          else:
+            avg_loss = total_loss 
             
-            print("epoch ", epoch, ": average loss = ", avg_loss)
+          #  print("epoch ", epoch, ": average loss = ", avg_loss)
             # checkpointing model
-            torch.save({'epoch': epoch,
-                        'model_state_dict': model.state_dict(),
-                        'optimizer_state_dict': optimizer.state_dict(),
-                        'loss': avg_loss,
-                        }, "model_ckpt.pt")
+          torch.save({'epoch': epoch,
+                      'model_state_dict': model.state_dict(),
+                      'optimizer_state_dict': optimizer.state_dict(),
+                      'loss': avg_loss,
+                      }, ckpt_path)
           count += 1
+        #avg_loss = total_loss / len(train_data)
+        print("epoch ", epoch, ": average loss = ", avg_loss)
 
 
 def do_inference(
@@ -211,14 +212,8 @@ def do_inference(
     model.load_state_dict(checkpoint['model_state_dict'])
     sp_model = SentencePieceProcessor(model_file=tokenizer_path)
 
-    #max_seq_len = model_config.max_seq_len
-
     # Encode Prompt Text
     raw_tokens = sp_model.encode(prompt_text) # Encode the prompt text
-    #seed_bpe = [sp_model.decode(token) for token in raw_tokens]
-    #print(prompt_text)
-    #print("========= after tokenization =========")
-    #print(seed_bpe)
     max_gen_len = 2 * model_config.max_seq_len
     prompt_tokens = []
     prompt_tokens.append(raw_tokens)
@@ -227,7 +222,7 @@ def do_inference(
     max_prompt_len = max(len(t) for t in prompt_tokens)
     assert max_prompt_len <= model_config.max_seq_len
     total_len = min(model_config.max_seq_len, max_gen_len + max_prompt_len)
-    pad_id = sp_model.pad_id()
+    pad_id = sp_model.pad_id() # Padding
     tokens = torch.full((bsz0, total_len), pad_id, dtype=torch.long, device=device)
     for k,t in enumerate(prompt_tokens):
       tokens[k, : len(t)] = torch.tensor(t, dtype=torch.long, device=device)
@@ -264,43 +259,40 @@ def do_inference(
       out_tokens.append(toks)
 
     sampled_text = [sp_model.decode(t) for t in out_tokens]
-    # Generated text from sampling is underlined.
-    print(prompt_text + bcolors.UNDERLINE + sampled_text[0] + bcolors.ENDC)
+    
+    # Original prompt is underlined followed by generated text.
+    print(bcolors.UNDERLINE + prompt_text + bcolors.ENDC + sampled_text[0])
 
 
-# Set up the model
+# Set up the model parameters to be taken from command line arguments
 parser = argparse.ArgumentParser(description='Tiny Llama2 Pre-training or Inferencing.')
 # parser.add_argument('doinference', type = bool,const=None, default=None,\
 #                     help = 'Toggle indicating doing inference (True) or pre-training (False)')  # do_inference (True) or do_training (False) flag
-parser.add_argument('--inference-only', action='store_true')
-parser.add_argument('-param_dir', default = 'llama2-tiny', help = 'path to model configuration jason file')           
-parser.add_argument('-tokenizer_path', default = 'codellama7b_tokenizer.model')
-parser.add_argument('-device', default = 'cpu')           
-parser.add_argument('-ckpt_path', default = 'model_ckpt.pt')  
-parser.add_argument('-prompt_text', default = "How to assess fairness assessment?")
-parser.add_argument('-traindata', default = "sr1107a1.txt") 
+parser.add_argument('--inference_only', action='store_true', help ='Toggle for turning to inference only mode. If not used,\
+                    the program will perform model pre-training')
+parser.add_argument('--param_dir', type = str, default = 'llama2-tiny', help = 'path to model configuration json file')           
+parser.add_argument('--tokenizer_path', type = str, default = 'codellama7b_tokenizer.model',\
+                    help = 'path to the tokenizer model used for text encoding/decoding')
+parser.add_argument('--device', type = str, default = 'cpu', help = 'Device type: cpu or gpu')           
+parser.add_argument('--ckpt_path', type = str, default = 'model_ckpt.pt', help = 'full path to the model checkpoint file') 
+parser.add_argument('--n_epochs', type = int, default = 10, help = 'Number of epochs for training')
+parser.add_argument('--temperature', type = float, default = 0.3, help = 'Temperature for sampling')
+parser.add_argument('--top_p', type = float, default = 0.9, help = 'Top-p sampling parameter')
+parser.add_argument('--prompt_text', type = str, default = "How to manage model risk "\
+                    , help = 'Prompt text for generating the next token')
+parser.add_argument('--traindata', type = str, default = "sr1107a1.txt", help = 'name of the training data') 
 args = parser.parse_args()
-#print(args.inference, args.param_dir, args.tokenizer_path, args.device, args.ckpt_path, args.prompt_text, args.traindata)
-print(args.inference_only)
+
+# Execute the program
 if __name__ == "__main__":
-  #ckpt_dir = "llama2-tiny"
-  #tokenizer_path = "codellama7b_tokenizer.model"
-  #device = "cpu"
-
-  # Toggle for pre-training or inference!!! Set do_inference: bool to False for pre-training and True for inference
-  #do_inference: bool = False
-  #do_training: bool = not do_inference
-
   if args.inference_only:
-    # Task: Generate code from prompt text
-    #prompt_text= "from sklearn.model_selection import GridSearchCV\ndef test_gridsearch("
-    #prompt_text = "with open(filepath, "
-    #promt_text = "How to assess fairness assessment?"
-    do_inference(param_dir=args.param_dir,tokenizer_path=args.tokenizer_path, ckpt_path=args.ckpt_path,\
-                prompt_text=args.prompt_text, device = args.device)
+    # Task: Generate code or text from prompt text
+    do_inference(param_dir=args.param_dir,tokenizer_path=args.tokenizer_path, \
+                 ckpt_path=args.ckpt_path, temperature = args.temperature, \
+                top_p=args.top_p, prompt_text=args.prompt_text, device = args.device)
   else:
-    # Task: Train llama2 to code Python
-    main(param_dir=args.param_dir, tokenizer_path=args.tokenizer_path, traindata_path=args.traindata)
-  #else:
-    # Shouldn't reach here.
-    #assert False, "Set do_training or do_inference"
+    # Task: Train llama2 to generate next token for text or Python code depending on the traindata and tokenizer used
+    main(param_dir=args.param_dir, tokenizer_path=args.tokenizer_path, \
+         top_p=args.top_p,temperature = args.temperature, n_epochs=args.n_epochs, \
+          traindata_path=args.traindata)
+
