@@ -271,7 +271,7 @@ parser = argparse.ArgumentParser(description='Tiny Llama2 Pre-training or Infere
 parser.add_argument('--inference_only', action='store_true', help ='Toggle for turning to inference only mode. If not used,\
                     the program will perform model pre-training')
 parser.add_argument('--param_dir', type = str, default = 'llama2-tiny', help = 'path to model configuration json file')           
-parser.add_argument('--tokenizer_path', type = str, default = 'codellama7b_tokenizer.model',\
+parser.add_argument('--tokenizer_path', type = str, default = 'tokenizer.model',\
                     help = 'path to the tokenizer model used for text encoding/decoding')
 parser.add_argument('--device', type = str, default = 'cpu', help = 'Device type: cpu or gpu')           
 parser.add_argument('--ckpt_path', type = str, default = 'model_ckpt.pt', help = 'full path to the model checkpoint file') 
