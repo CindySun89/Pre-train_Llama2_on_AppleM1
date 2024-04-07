@@ -39,6 +39,8 @@ PYTHONPATH=~/dev/Pre-train_Llama2_on_AppleM1/llama/ python3 next_token_predictio
 ```
 PYTHONPATH=~/dev/Pre-train_Llama2_on_AppleM1/llama/ python3 next_token_prediction.py --n_epochs 100 --temperature 0.2
 ```
+    The default training data is sr1107a1.txt which was downloaded from https://www.federalreserve.gov/supervisionreg/srletters/sr1107a1.pdf and converted to a .txt file. You can use your own training data and try it out. Make sure you add `--traindata <filename>.txt' to the command above to reflect such customizations.
+
     
 2. TODO:
 
