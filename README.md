@@ -35,13 +35,21 @@ File next_token_prediction.py contains codes for both model pre-training and inf
 ```
 PYTHONPATH=~/dev/Pre-train_Llama2_on_AppleM1/llama/ python3 next_token_prediction.py
 ```
-    It will launch the model pre-training using the default configurations. If you'd like to customize it, consider adding the relevant arguments to the command above. For example, if you'd like to run 100 epochs and a temperature of 0.2, you can run this: 
+    It will launch the model pre-training using the default configurations. If you'd like to customize it, consider adding the relevant arguments to the command above. Here's a list of the arguments:
+        `--param_dir`, path to model configuration json file params.json, default is "llama2-tiny"
+        `--tokenizer_path`, full path including file name to the tokenizer model checked out from Meta, default is "tokenizer.model"
+        `--device`, device type: cpu or gpu, default is cpu
+        `--ckpt_path', full path to the model checkpoint file, default is "model_ckpt.pt"
+        `--n_epochs`, number of epochs for training, default is 10
+        `--temperature`, Temperature for sampling, default is 0.3
+        `--top_p`, Top-p sampling parameter, default is 0.9
+        `--train_data`, name of the training data, default is "sr1107a1.txt"
+    Here's an example:'
 ```
-PYTHONPATH=~/dev/Pre-train_Llama2_on_AppleM1/llama/ python3 next_token_prediction.py --n_epochs 100 --temperature 0.2
+PYTHONPATH=~/dev/Pre-train_Llama2_on_AppleM1/llama/ python3 next_token_prediction.py --tokenizer_path "tokenizer.model" --n_epochs 100 --temperature 0.2
 ```
     The default training data is sr1107a1.txt which was downloaded from https://www.federalreserve.gov/supervisionreg/srletters/sr1107a1.pdf and converted to a .txt file. You can use your own training data and try it out. Make sure you add `--traindata <filename>.txt' to the command above to reflect such customizations.
 
-    
 2. TODO:
 
 Describe how to collect sample data.
@@ -52,4 +60,12 @@ D. To make inference using the pre-trained model: by default the model checkpoin
 ```
 PYTHONPATH=~/dev/Pre-train_Llama2_on_AppleM1/llama/ python3 next_token_prediction.py --inference_only
 ```
-Like in C.1, you can customize the inference by adding arguments to the above command.
+Like in C.1, you can customize the inference by adding arguments to the above command. Here's a list of arguments relevant to inference:
+        `--param_dir`, path to model configuration json file params.json, default is "llama2-tiny"
+        `--tokenizer_path`, full path including file name to the tokenizer model checked out from Meta, default is "tokenizer.model"
+        `--device`, device type: cpu or gpu, default is cpu
+        `--ckpt_path', full path to the model checkpoint file, default is "model_ckpt.pt"
+        `--n_epochs`, number of epochs for training, default is 10
+        `--temperature`, Temperature for sampling, default is 0.3
+        `--top_p`, Top-p sampling parameter, default is 0.9
+        `--prompt_text`, Prompt text for generating the next token", default is set to be "How to manage model risk " which is linked to the default training data.
