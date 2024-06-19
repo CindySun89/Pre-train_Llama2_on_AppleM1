@@ -49,6 +49,10 @@ def sample_top_p(probs, p):
   next_token = torch.gather(probs_idx, -1, next_token)
   return next_token
 
+def check_model_parameters_device(model: nn.Module):
+  for name, param in model.named_parameters():
+    print(f"Parameter: {name}, Device: {param.device}")
+
 # Define the main function for pre-training a Llama2 model
 def main(
     param_dir: str,
