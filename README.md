@@ -2,7 +2,7 @@
 
 This repo requires a MacBook Pro equipped with the powerful Apple M-series processor.
 
-A. Prerequisite:
+##A. Prerequisite:
 
 You will need to download Llama2 locally from Meta. Here are the steps to follow:
 
@@ -11,7 +11,7 @@ You will need to download Llama2 locally from Meta. Here are the steps to follow
 3. You'll receive an email from "AI at Meta" with the subject line "Get Started with Llama 2" which contains detailed instructions about the download. There are multiple options for model weights, and you should select the smallest one if you have a regular MacBook. You can always work your way up later if you have a powerful machine, and I'd love to hear about how they compare.
 
 
-B. To set up the environment:
+##B. To set up the environment:
 
 1. Clone the repo to a local development directory using the terminal:
 For example, under `~/dev`, run `git clone` like this:
@@ -28,7 +28,7 @@ cd ~/dev/Pre-train_Llama2_on_AppleM1
 cp model.py.for_training llama/llama/model.py
 ``` 
 
-C. To pre-train the model: 
+##C. To pre-train the model: 
 File next_token_prediction.py contains codes for both model pre-training and inference and the default execution is pre-training. The input parameters are served through command line arguments when you execute the command below:
 
 1. Run the following command (assume you git clone the repo under `~/dev` as done in A.1:
