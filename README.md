@@ -8,6 +8,7 @@ You will need to download Llama2 locally from Meta. Here are the steps to follow
 
 1. Access a download request from Meta through this link: https://llama.meta.com/llama-downloads/
 2. Select "Llama2 & Llama Chat" model if you'd like to train a model for text generation, or "Code Llama" model if you'd like to train a model for code generation. Please read through the terms and conditions and accept them.
+    Update after Llama 3 release: you will need to choose the model from the "Previous Models" section. Choose "Llama 2" for text generation and "Llama Code" for code generation.
 3. You'll receive an email from "AI at Meta" with the subject line "Get Started with Llama 2" which contains detailed instructions about the download. There are multiple options for model weights, and you should select the smallest one if you have a regular MacBook. You can always work your way up later if you have a powerful machine, and I'd love to hear about how they compare.
 
 
