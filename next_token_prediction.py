@@ -12,6 +12,7 @@ from sentencepiece import SentencePieceProcessor
 import llama
 from llama.model import ModelArgs, Transformer
 from llama import Llama, Dialog
+import os
 
 ## https://pytorch.org/xla/release/2.1/index.html#pytorch-on-xla-devices
 # import torch_xla.core.xla_model as xm
@@ -53,6 +54,10 @@ def check_model_parameters_device(model: nn.Module):
   for name, param in model.named_parameters():
     print(f"Parameter: {name}, Device: {param.device}")
 
+def check_tokenizer_health(tokenizer_path: str):
+  assert os.path.isfile(tokenizer_path), "tokenizer not found in path specified by tokenizer_path."
+  assert os.stat(tokenizer_path).st_size > 0, "invalid tokenizer!"
+
 # Define the main function for pre-training a Llama2 model
 def main(
     param_dir: str,
@@ -84,6 +89,7 @@ def main(
         ckpt_path (str, optional): The path to save the model checkpoint. Defaults to "model_ckpt.pt".
     """
     # Use SentencePiece to encode/decode the text data
+    check_tokenizer_health(tokenizer_path)
     sp_model = SentencePieceProcessor(model_file=tokenizer_path)
     # Load the train data
     if traindata_path == "":
@@ -123,17 +129,18 @@ def main(
     train_fn = "traindata.bin"
     m = np.memmap(train_fn, dtype=np.uint16, mode='r')
     max_seq_len = model_config.max_seq_len
-    num_batches = len(m) // max_seq_len
-    num_batches -= BS
-    assert num_batches > 0
 
-    ixs = list(range(num_batches))
+    # number of training samples you want in the actual model training.
+    num_train_samples = 60
+    ixs = list(range(0, len(m) - max_seq_len * BS, (len(m) - max_seq_len * BS) // num_train_samples))
     random_seed = 42
     random.Random(random_seed).shuffle(ixs)
     train_data = []
     for ix in ixs:
-        start = ix * max_seq_len
+        start = ix
         end = start + max_seq_len * BS + 1
+        if end >= len(m):
+          continue
         chunk = torch.from_numpy((m[start:end]).astype(np.int64))
         x, y = chunk[:-1], chunk[1:]
         x, y = x.reshape(BS, -1), y.reshape(BS, -1)
